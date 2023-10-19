@@ -19,7 +19,9 @@ class Dense:
         ]
 
     def forward(self, inputs: List[float]) -> List[float]:
-        hiddenOutputs = [perceptron.forward(inputs) for perceptron in self.hiddenLayer]
+        hiddenOutputs = [
+            perceptron.forward(inputs) for perceptron in self.hiddenLayer
+        ]
         finalOutputs = [
             perceptron.forward(hiddenOutputs) for perceptron in self.outLayer
         ]
