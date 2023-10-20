@@ -17,13 +17,20 @@ class Dense:
         self.outLayer: List[Perceptron] = [
             Perceptron(nbHidden, outputAct) for _ in range(nbOutput)
         ]
+        self.outLayer: List[Perceptron] = [
+            Perceptron(nbHidden, outputAct) for _ in range(nbOutput)
+        ]
 
     def forward(self, inputs: List[float]) -> List[float]:
-        hiddenOutputs = [
+        hidden_output = [
             perceptron.forward(inputs) for perceptron in self.hiddenLayer
         ]
-        finalOutputs = [
-            perceptron.forward(hiddenOutputs) for perceptron in self.outLayer
+        return [
+            perceptron.forward(hidden_output) for perceptron in self.outLayer
         ]
 
-        return finalOutputs
+    def backward(self, deltas: List[float]):
+        out_perceptron_delta = self.outLayer[0].backward(deltas[0])
+
+        for perceptron in self.hiddenLayer:
+            perceptron.backward(out_perceptron_delta)
