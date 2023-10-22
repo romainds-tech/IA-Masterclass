@@ -20,7 +20,7 @@ python3 main.py
 How to use Rust implementation:
 
 - install rust and cargo
-- go in /rust/src folder and run:
+- go in /rust folder and run:
 
 ```bash
 cargo run
