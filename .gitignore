@@ -1,4 +1,8 @@
 /.idea
 /__pycache__
 /rust/target
+/python/txt
+/python/romain_txt.zip
+python.zip
 /rust/Cargo.lock
+.DS_Store
