@@ -102,10 +102,3 @@ impl Perceptron {
         self.biais += self.delta * self.learning_rate
     }
 }
-
-// Utilisation :
-// fn main() {
-//     let mut p = Perceptron::new(2, ActivationType::Sigmoid);
-//     let output = p.predict(&[1.0, -1.0]);
-//     println!("Output: {}", output);
-// }
