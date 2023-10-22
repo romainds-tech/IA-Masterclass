@@ -1,89 +1,70 @@
-import random
-import math
 from enum import Enum
 from typing import List
+import random
+import math
 
 
 class ActivationType(Enum):
-    TRESHOLD = "Treshold"
+    THRESHOLD = "Threshold"
     SIGMOID = "Sigmoid"
     TANH = "Tanh"
     RELU = "ReLU"
 
 
 class Perceptron:
-    def __init__(self, nbInput: int, activation: ActivationType):
-        self.act = activation
-        self.biais = random.uniform(-1, 1)
-        self.weights = [random.uniform(-1, 1) for _ in range(nbInput)]
-        self.learningRate: float = 0.1
-        self.inputs: List[float] = []
-        self.output: float = 0.0
+    def __init__(self, nbInputs: int, activation: ActivationType):
+        self.activation = activation
+        self.weights = [random.uniform(-1, 1) for _ in range(nbInputs)]
+        self.bias = random.uniform(-1, 1)
+        self.learningRate = 0.1
+        self.output = 0.0
+        self.gradients = []
         self.delta: float = 0.0
-        self.gradiants: [float] = [0 for _ in range(nbInput)]
+        self.inputs: List[float] = []
+        self.total_input: float = 0.0
 
     def _activate(self, x: float) -> float:
-        activations = {
-            ActivationType.TRESHOLD: lambda x: 1.0 if x >= 0 else 0.0,
-            ActivationType.SIGMOID: lambda x: 1.0 / (1.0 + math.exp(-x)),
-            ActivationType.TANH: lambda x: math.tanh(x),
-            ActivationType.RELU: lambda x: max(0.0, x),
-        }
-        return activations[self.act](x)
+        if self.activation == ActivationType.THRESHOLD:
+            return 1.0 if x >= 0 else 0.0
+        if self.activation == ActivationType.SIGMOID:
+            return 1.0 / (1.0 + math.exp(-x))
+        if self.activation == ActivationType.TANH:
+            return math.tanh(x)
+        if self.activation == ActivationType.RELU:
+            return max(0.0, x)
 
-    def _dActivate(
-        self, x: float
-    ) -> float:  # derivative of activation function
-        derivatives = {
-            ActivationType.TRESHOLD: 1.0,
-            ActivationType.SIGMOID: lambda x: x * (1.0 - x),
-            ActivationType.TANH: lambda x: 1.0 - math.tanh(x) ** 2,
-            ActivationType.RELU: lambda x: 1.0 if x > 0 else 0.0,
-        }
-        return derivatives[self.act](x)
+    def _d_activate(self, x: float) -> float:
+        if self.activation == ActivationType.THRESHOLD:
+            return 0.0
+        if self.activation == ActivationType.SIGMOID:
+            y = self._activate(x)
+            return y * (1.0 - y)
+        if self.activation == ActivationType.TANH:
+            return 1.0 - math.tanh(x) ** 2
+        if self.activation == ActivationType.RELU:
+            return 1.0 if x > 0 else 0.0
 
-    def _dot(self, inputs: List[float]) -> float:
-        return sum(
-            input_val * weight
-            for input_val, weight in zip(inputs, self.weights)
-        )
-
-    def forward(self, inputs: List[float]) -> float:
-        if len(inputs) != len(self.weights):
-            return float("NaN")
+    def predict(self, inputs: List[float]) -> float:
         self.inputs = inputs
-        sop = self._dot(inputs)
-        self.output = self._activate(sop + self.biais)
-        return self.output
+        self.total_input = (
+            sum(i * w for i, w in zip(inputs, self.weights)) + self.bias
+        )
+        return self._activate(self.total_input)
 
-    def _update_weights_and_biais(self):
+    def train(self, inputs: List[float], target: float):
+        prediction = self.predict(inputs)
+        error = target - prediction
+
+        # calculate gradients
+        self.delta = error * self._d_activate(self.total_input)
+
+        self.gradients = []
         for i in range(len(self.weights)):
-            self.weights[i] += self.gradiants[i] * self.learningRate
-        self.biais += self.delta * self.learningRate
+            self.gradients.append(self.delta * inputs[i])
 
-    def backward(self, delta: float) -> float:
-        self._calc_gradients(delta)
-        self._update_weights_and_biais()
-        return self.delta
-
-    def _calc_gradients(self, delta: float):
-        self.gradiants = []
-        self.delta = self._dActivate(self.output) * delta
-        for input in self.inputs:
-            self.gradiants.append(input * self.delta)
-
-    def train(
-        self,
-        inputs: List[float],
-        expected: float,
-        learningRate: float = 0.0001,
-    ) -> float:
-        self.learningRate = learningRate
-        # predict
-        self.forward(inputs)
-        # calc error
-        delta = expected - self.output
-        # calc gradiants
-        self.backward(delta)
-
-        return abs(delta)
+        # adjust weights and bias
+        for i in range(len(self.weights)):
+            self.weights[i] += (
+                self.gradients[i] + self.learningRate * error * inputs[i]
+            )
+        self.bias += self.delta * self.learningRate

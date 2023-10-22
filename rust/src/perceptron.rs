@@ -1,82 +1,111 @@
+use std::f64;
 use rand::Rng;
 
 #[derive(Clone, Copy)]
 pub enum ActivationType {
-    TRESHOLD,
-    SIGMOID,
-    TANH,
-    RELU,
+    Threshold,
+    Sigmoid,
+    Tanh,
+    Relu,
 }
 
 pub struct Perceptron {
-    act: ActivationType,
+    activation: ActivationType,
     biais: f64,
-    weights: Vec<f64>,
+    pub weights: Vec<f64>,
     learning_rate: f64,
-    inputs: Vec<f64>,
     output: f64,
-    error: f64,
+    inputs: Vec<f64>,
+    gradients: Vec<f64>,
+    delta: f64,
 }
 
 impl Perceptron {
-    pub fn new(nb_input: usize, activation: ActivationType) -> Self {
+    pub fn new(nb_inputs: usize, activation: ActivationType) -> Perceptron {
         let mut rng = rand::thread_rng();
-        let weights: Vec<f64> = (0..nb_input).map(|_| rng.gen_range(-1.0..1.0)).collect();
-        Self {
-            act: activation,
+        Perceptron {
+            activation,
             biais: rng.gen_range(-1.0..1.0),
-            weights,
+            weights: (0..nb_inputs).map(|_| rng.gen_range(-1.0..1.0)).collect(),
             learning_rate: 0.1,
-            inputs: Vec::new(),
             output: 0.0,
-            error: 0.0,
+            inputs: vec![0.0; nb_inputs],
+            gradients: vec![0.0; nb_inputs],
+            delta: 0.0,
         }
     }
 
     fn activate(&self, x: f64) -> f64 {
-        match self.act {
-            ActivationType::TRESHOLD => if x >= 0.0 { 1.0 } else { 0.0 },
-            ActivationType::SIGMOID => 1.0 / (1.0 + (-x).exp()),
-            ActivationType::TANH => x.tanh(),
-            ActivationType::RELU => x.max(0.0),
+        match self.activation {
+            ActivationType::Threshold => {
+                if x >= 0.0 { 1.0 } else { 0.0 }
+            },
+            ActivationType::Sigmoid => {
+                1.0 / (1.0 + f64::exp(-x))
+            },
+            ActivationType::Tanh => {
+                x.tanh()
+            },
+            ActivationType::Relu => {
+                f64::max(0.0, x)
+            },
         }
     }
 
-    fn dot(&self, inputs: &[f64]) -> f64 {
-        self.weights.iter().zip(inputs).map(|(w, i)| w * i).sum()
+    fn dActivate(&self, x: f64) -> f64 {
+        match self.activation {
+            ActivationType::Threshold => {
+                1.0
+            },
+            ActivationType::Sigmoid => {
+                x * (1.0 - x)
+            },
+            ActivationType::Tanh => {
+                1.0 - x.powi(2)
+            },
+            ActivationType::Relu => {
+                if x > 0.0 { 1.0 } else { 0.0 }
+            },
+        }
     }
 
-    pub fn forward(&mut self, inputs: &[f64]) -> f64 {
-        if inputs.len() != self.weights.len() {
-            return f64::NAN;
-        }
-        self.inputs = inputs.to_vec();
-        let sop = self.dot(&inputs);
-        self.output = self.activate(sop + self.biais);
+    pub fn predict(&mut self, inputs: &[f64]) -> f64 {
+        assert_eq!(inputs.len(), self.weights.len());
+
+        self.inputs.copy_from_slice(inputs);
+
+        self.output = self.activate(
+            inputs.iter()
+                .zip(self.weights.iter())
+                .map(|(input, weight)| input * weight)
+                .sum::<f64>() + self.biais
+        );
         self.output
     }
 
-    fn calculate_error(&mut self, expected: f64) -> f64 {
-        self.error = expected - self.output;
-        self.error
-    }
+    pub fn train(&mut self, inputs: &[f64], target: f64) {
+        assert_eq!(inputs.len(), self.weights.len());
 
-    fn update_weights_and_biais(&mut self) {
-        for (weight, input) in self.weights.iter_mut().zip(&self.inputs) {
-            *weight += input * self.learning_rate * self.error;
+        let prediction = self.predict(inputs);
+        let error = target - prediction;
+        
+        self.delta = error * self.dActivate(self.output);
+
+        for i in 0..self.weights.len() {
+            self.gradients[i] = self.delta * inputs[i];
         }
-        self.biais += self.learning_rate * self.error;
-    }
 
-    fn backward(&mut self, expected: f64) {
-        self.calculate_error(expected);
-        self.update_weights_and_biais();
-    }
 
-    pub fn train(&mut self, inputs: &[f64], expected: f64, learning_rate: f64) -> f64 {
-        self.learning_rate = learning_rate;
-        self.forward(inputs);
-        self.backward(expected);
-        self.error.abs()
+        for i in 0..self.weights.len() {
+            self.weights[i] +=  self.gradients[i] + self.learning_rate * error * inputs[i];
+        }
+        self.biais += self.delta * self.learning_rate
     }
 }
+
+// Utilisation :
+// fn main() {
+//     let mut p = Perceptron::new(2, ActivationType::Sigmoid);
+//     let output = p.predict(&[1.0, -1.0]);
+//     println!("Output: {}", output);
+// }
