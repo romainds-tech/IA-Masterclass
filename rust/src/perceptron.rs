@@ -16,25 +16,24 @@ pub struct Perceptron {
     learning_rate: f64,
     output: f64,
     inputs: Vec<f64>,
-    gradients: Vec<f64>,
     delta: f64,
 }
 
 impl Perceptron {
     pub fn new(nb_inputs: usize, activation: ActivationType) -> Perceptron {
         let mut rng = rand::thread_rng();
-        Perceptron {
+        Self {
             activation,
             biais: rng.gen_range(-1.0..1.0),
             weights: (0..nb_inputs).map(|_| rng.gen_range(-1.0..1.0)).collect(),
             learning_rate: 0.1,
             output: 0.0,
             inputs: vec![0.0; nb_inputs],
-            gradients: vec![0.0; nb_inputs],
             delta: 0.0,
         }
     }
 
+    
     fn activate(&self, x: f64) -> f64 {
         match self.activation {
             ActivationType::Threshold => {
@@ -85,20 +84,19 @@ impl Perceptron {
 
     pub fn train(&mut self, inputs: &[f64], target: f64) {
         assert_eq!(inputs.len(), self.weights.len());
-
+    
         let prediction = self.predict(inputs);
         let error = target - prediction;
         
         self.delta = error * self.dActivate(self.output);
-
-        for i in 0..self.weights.len() {
-            self.gradients[i] = self.delta * inputs[i];
+    
+        let combination = self.learning_rate * error + self.delta;
+    
+        for (i, &input) in inputs.iter().enumerate() {
+            self.weights[i] += input * combination;
         }
-
-
-        for i in 0..self.weights.len() {
-            self.weights[i] +=  self.gradients[i] + self.learning_rate * error * inputs[i];
-        }
-        self.biais += self.delta * self.learning_rate
+    
+        self.biais += self.delta * self.learning_rate;
     }
+    
 }

@@ -10,7 +10,7 @@ use crate::layer::Layer;
 fn main() {
     let start = Instant::now();
 
-    let dataset: Vec<([f64; 3], i32)> = vec![
+    let dataset: [([f64; 3], i32); 10] = [
         ([0.12, 0.90, 0.10], 1),
         ([0.10, 0.70, 0.40], 1),
         ([0.14, 0.40, 0.20], 1),
@@ -23,10 +23,12 @@ fn main() {
         ([0.40, 0.10, 0.10], 0),
     ];
 
+    let train = 5000;
     let epoch = 100;
+
     let mut all_errors = Vec::new();
 
-    for _ in 0..500 {
+    for _ in 0..train {
         let mut layer = Layer::new(
             3,
             (9, ActivationType::Relu),
@@ -34,22 +36,24 @@ fn main() {
         );
 
         for _ in 0..epoch {
-            for (inputs, target) in &dataset {
-                layer.train(&inputs.to_vec(), &vec![*target as f64]);
+            for &(inputs, target) in &dataset {
+                layer.train(&inputs, &[target as f64]);
             }
         }
 
+        let mut datasetlen = 0;
         let mut error_mean = 0.0;
-        for (inputs, target) in &dataset {
-            error_mean += (*target as f64 - layer.predict(&inputs.to_vec())[0]).abs();
+
+        for &(inputs, target) in &dataset {
+            datasetlen += 1;
+            error_mean += (target as f64 - layer.predict(&inputs)[0]).abs();
         }
-        error_mean /= dataset.len() as f64;
+        error_mean /= datasetlen as f64;
 
         all_errors.push(error_mean);
     }
 
-    let error_avg: f64 = all_errors.iter().sum::<f64>() / all_errors.len() as f64;
-    println!("Moyenne des erreurs: {}", error_avg);
+    println!("Moyenne des erreurs: {}", all_errors.iter().sum::<f64>() / all_errors.len() as f64);
 
-    println!("Temps écoulé: {} secondes", start.elapsed().as_secs_f64());
+    println!("Temps écoulé: {} secondes for {} Layer generated and train {} time each", start.elapsed().as_secs_f64(), train, epoch);
 }
