@@ -67,9 +67,11 @@ if __name__ == "__main__":
                 layer.train(inputs, [target])
 
         errorMean = 0
+        datasetlen = 0
         for inputs, target in dataset:
+            datasetlen += 1
             errorMean += abs(target - layer.predict(inputs)[0])
-        errorMean /= len(dataset)
+        errorMean /= datasetlen
 
         allErrors.append(errorMean)
 

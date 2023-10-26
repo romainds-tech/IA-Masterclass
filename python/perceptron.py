@@ -18,7 +18,6 @@ class Perceptron:
         self.bias = random.uniform(-1, 1)
         self.learningRate = 0.1
         self.output = 0.0
-        self.gradients = []
         self.delta: float = 0.0
         self.inputs: List[float] = []
         self.total_input: float = 0.0
@@ -58,13 +57,9 @@ class Perceptron:
         # calculate gradients
         self.delta = error * self._d_activate(self.total_input)
 
-        self.gradients = []
-        for i in range(len(self.weights)):
-            self.gradients.append(self.delta * inputs[i])
-
         # adjust weights and bias
         for i in range(len(self.weights)):
             self.weights[i] += (
-                self.gradients[i] + self.learningRate * error * inputs[i]
-            )
+                self.delta * inputs[i]
+            ) + self.learningRate * error * inputs[i]
         self.bias += self.delta * self.learningRate
